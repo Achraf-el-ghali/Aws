@@ -188,6 +188,16 @@ class PatientController extends AbstractController
         ]);
     }
 
+    #[Route('/{id}/exists', methods: ['GET'], requirements: ['id' => '\d+'])]
+    public function exists(int $id): JsonResponse
+    {
+        $patient = $this->patientRepository->find($id);
+        return $this->json([
+            'exists' => $patient !== null,
+            'patient' => $patient?->toArray(),
+        ]);
+    }
+
     private function hydratePatient(Patient $patient, array $data): void
     {
         if (isset($data['nom'])) $patient->setNom($data['nom']);
