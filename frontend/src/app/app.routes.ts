@@ -49,6 +49,12 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/patient-portal/mon-dossier.component').then(m => m.MonDossierComponent),
     canActivate: [AuthGuard], data: { role: 'patient' },
   },
+  // Diagnostic page (accessible by admin)
+  {
+    path: 'admin/diagnostic',
+    loadComponent: () => import('./pages/diagnostic/diagnostic.component').then(m => m.DiagnosticComponent),
+    canActivate: [AuthGuard], data: { role: 'admin' },
+  },
   // Legacy redirects
   { path: 'dashboard', redirectTo: 'admin/dashboard', pathMatch: 'full' },
   { path: 'patients', redirectTo: 'admin/patients', pathMatch: 'full' },

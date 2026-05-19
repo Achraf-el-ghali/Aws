@@ -32,6 +32,9 @@ import { AuthService } from './services/auth.service';
           <a routerLink="/admin/dossiers" routerLinkActive="active" class="nav-item">
             <i class="fas fa-folder-open"></i><span>Dossiers</span>
           </a>
+          <a routerLink="/admin/diagnostic" routerLinkActive="active" class="nav-item">
+            <i class="fas fa-stethoscope"></i><span>Diagnostic</span>
+          </a>
         </nav>
         <div class="sidebar-footer">
           <div class="user-info">
