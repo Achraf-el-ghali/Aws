@@ -2,11 +2,12 @@ import { Component } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from './services/auth.service';
+import { ToastComponent } from './components/toast/toast.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, ToastComponent],
   template: `
     <!-- No layout for login page -->
     <div *ngIf="!authService.isLoggedIn">
@@ -99,6 +100,9 @@ import { AuthService } from './services/auth.service';
         <router-outlet></router-outlet>
       </main>
     </div>
+
+    <!-- Global Toast Notifications -->
+    <app-toast></app-toast>
   `,
   styles: [`
     .app-layout { display: flex; min-height: 100vh; }
