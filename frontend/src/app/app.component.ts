@@ -55,45 +55,45 @@ import { AuthService } from './services/auth.service';
       </main>
     </div>
 
-    <!-- Patient Layout -->
-    <div class="app-layout" *ngIf="authService.isLoggedIn && authService.userRole === 'patient'">
-      <aside class="sidebar">
-        <div class="sidebar-header">
-          <div class="logo"><i class="fas fa-heartbeat"></i><span>Cloud Health</span></div>
-        </div>
-        <nav class="sidebar-nav">
-          <a routerLink="/patient/dashboard" routerLinkActive="active" class="nav-item">
-            <i class="fas fa-home"></i><span>Mon Espace</span>
+    <!-- Patient Layout - Premium Horizontal Navbar -->
+    <div class="patient-layout" *ngIf="authService.isLoggedIn && authService.userRole === 'patient'">
+      <nav class="patient-navbar">
+        <div class="navbar-left">
+          <a routerLink="/patient/dashboard" routerLinkActive="nav-active" class="nav-link">
+            <i class="fas fa-home"></i><span>Accueil</span>
           </a>
-          <a routerLink="/patient/prendre-rdv" routerLinkActive="active" class="nav-item">
+          <a routerLink="/patient/prendre-rdv" routerLinkActive="nav-active" class="nav-link">
             <i class="fas fa-calendar-plus"></i><span>Prendre RDV</span>
           </a>
-          <a routerLink="/patient/mes-rdv" routerLinkActive="active" class="nav-item">
-            <i class="fas fa-calendar-check"></i><span>Mes Rendez-vous</span>
+          <a routerLink="/patient/mes-rdv" routerLinkActive="nav-active" class="nav-link">
+            <i class="fas fa-calendar-check"></i><span>Mes RDV</span>
           </a>
-          <a routerLink="/patient/mon-dossier" routerLinkActive="active" class="nav-item">
+          <a routerLink="/patient/mon-dossier" routerLinkActive="nav-active" class="nav-link">
             <i class="fas fa-file-medical"></i><span>Mon Dossier</span>
           </a>
-        </nav>
-        <div class="sidebar-footer">
-          <div class="user-info">
-            <i class="fas fa-user"></i>
-            <div>
-              <span class="user-name">{{ authService.currentUser?.prenom }} {{ authService.currentUser?.nom }}</span>
-              <span class="user-role">Patient</span>
-            </div>
-          </div>
-          <button class="logout-btn" (click)="logout()"><i class="fas fa-sign-out-alt"></i></button>
         </div>
-      </aside>
-      <main class="main-content">
-        <header class="top-bar">
-          <h1 class="page-title">Cloud Health - Espace Patient</h1>
-          <div class="top-bar-actions">
-            <span class="status-indicator"><i class="fas fa-circle" style="color: var(--success); font-size: 8px;"></i> Système en ligne</span>
+        <div class="navbar-center">
+          <div class="navbar-logo"><i class="fas fa-heartbeat"></i><span>Cloud Health</span></div>
+        </div>
+        <div class="navbar-right">
+          <button class="notif-btn"><i class="fas fa-bell"></i><span class="notif-badge">2</span></button>
+          <div class="user-pill" (click)="showDropdown = !showDropdown">
+            <div class="user-avatar-sm">{{ authService.currentUser?.prenom?.charAt(0) }}{{ authService.currentUser?.nom?.charAt(0) }}</div>
+            <span class="user-name-nav">{{ authService.currentUser?.prenom }}</span>
+            <i class="fas fa-chevron-down"></i>
           </div>
-        </header>
-        <div class="content-area"><router-outlet></router-outlet></div>
+          <div class="dropdown-menu" *ngIf="showDropdown">
+            <div class="dropdown-header">
+              <strong>{{ authService.currentUser?.prenom }} {{ authService.currentUser?.nom }}</strong>
+              <span>Patient</span>
+            </div>
+            <hr>
+            <button (click)="logout(); showDropdown=false"><i class="fas fa-sign-out-alt"></i> Déconnexion</button>
+          </div>
+        </div>
+      </nav>
+      <main class="patient-main">
+        <router-outlet></router-outlet>
       </main>
     </div>
   `,
@@ -117,9 +117,53 @@ import { AuthService } from './services/auth.service';
     .page-title { font-size: 20px; font-weight: 600; color: var(--gray-800); }
     .status-indicator { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--gray-500); }
     .content-area { padding: 32px; flex: 1; }
+
+    /* ===== Patient Premium Navbar ===== */
+    .patient-layout { min-height: 100vh; background: #F8FAFC; }
+    .patient-navbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+      height: 68px; background: rgba(255,255,255,0.92); backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(226,232,240,0.6);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 32px;
+      box-shadow: 0 2px 20px rgba(0,0,0,0.04);
+    }
+    .navbar-left { display: flex; align-items: center; gap: 4px; }
+    .nav-link { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 10px; text-decoration: none;
+      color: #64748b; font-size: 13px; font-weight: 500; transition: all 0.25s ease;
+      i { font-size: 14px; }
+      &:hover { background: #f1f5f9; color: #2563eb; }
+      &.nav-active { background: #eff6ff; color: #2563eb; font-weight: 600; } }
+    .navbar-center { position: absolute; left: 50%; transform: translateX(-50%); }
+    .navbar-logo { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 800; color: #1e293b;
+      i { color: #2563eb; font-size: 22px; } }
+    .navbar-right { display: flex; align-items: center; gap: 12px; position: relative; }
+    .notif-btn { position: relative; background: #f1f5f9; border: none; width: 38px; height: 38px; border-radius: 10px;
+      cursor: pointer; color: #475569; transition: all 0.2s; display: flex; align-items: center; justify-content: center;
+      &:hover { background: #e2e8f0; color: #2563eb; } }
+    .notif-badge { position: absolute; top: 4px; right: 4px; width: 16px; height: 16px; background: #ef4444; border-radius: 50%;
+      font-size: 10px; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+    .user-pill { display: flex; align-items: center; gap: 8px; padding: 6px 12px 6px 6px; border-radius: 24px;
+      background: #f8fafc; border: 1px solid #e2e8f0; cursor: pointer; transition: all 0.2s;
+      &:hover { border-color: #cbd5e1; background: #f1f5f9; }
+      .user-name-nav { font-size: 13px; font-weight: 500; color: #334155; }
+      i { font-size: 10px; color: #94a3b8; } }
+    .user-avatar-sm { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #2563eb, #3b82f6);
+      color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+    .dropdown-menu { position: absolute; top: 52px; right: 0; background: white; border-radius: 12px; padding: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12); border: 1px solid #e2e8f0; min-width: 200px; z-index: 9999;
+      animation: fadeIn 0.15s ease;
+      .dropdown-header { padding: 8px 12px; strong { display: block; font-size: 14px; color: #1e293b; } span { font-size: 12px; color: #64748b; } }
+      hr { border: none; border-top: 1px solid #f1f5f9; margin: 8px 0; }
+      button { width: 100%; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: none; background: none;
+        border-radius: 8px; font-size: 13px; color: #dc2626; cursor: pointer; transition: background 0.2s;
+        &:hover { background: #fef2f2; } } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+    .patient-main { padding-top: 68px; }
   `]
 })
 export class AppComponent {
+  showDropdown = false;
   constructor(public authService: AuthService, private router: Router) {}
   logout(): void { this.authService.logout(); }
 }
