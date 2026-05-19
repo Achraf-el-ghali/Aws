@@ -1,0 +1,18 @@
+parameters:
+    kafka_brokers: '%env(KAFKA_BROKERS)%'
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/DependencyInjection/'
+            - '../src/Entity/'
+            - '../src/Kernel.php'
+
+    App\Service\KafkaProducerService:
+        arguments:
+            $brokers: '%kafka_brokers%'
