@@ -49,15 +49,15 @@ import { DossierService } from '../../services/dossier.service';
       <div class="quick-actions">
         <h2>Actions rapides</h2>
         <div class="actions-grid">
-          <a routerLink="/patients" class="action-card">
+          <a routerLink="/admin/patients" class="action-card">
             <i class="fas fa-user-plus"></i>
             <span>Nouveau Patient</span>
           </a>
-          <a routerLink="/rendezvous" class="action-card">
+          <a routerLink="/admin/rendezvous" class="action-card">
             <i class="fas fa-calendar-plus"></i>
             <span>Nouveau RDV</span>
           </a>
-          <a routerLink="/dossiers" class="action-card">
+          <a routerLink="/admin/dossiers" class="action-card">
             <i class="fas fa-file-medical"></i>
             <span>Nouveau Dossier</span>
           </a>
@@ -69,7 +69,7 @@ import { DossierService } from '../../services/dossier.service';
         <div class="card">
           <div class="card-header">
             <h2>Rendez-vous récents</h2>
-            <a routerLink="/rendezvous" class="btn btn-outline">Voir tout</a>
+            <a routerLink="/admin/rendezvous" class="btn btn-outline">Voir tout</a>
           </div>
           <div class="table-container" *ngIf="recentRdv.length > 0">
             <table>
