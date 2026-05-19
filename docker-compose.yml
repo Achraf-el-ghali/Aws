@@ -157,8 +157,6 @@ services:
     container_name: frontend
     ports:
       - "4200:80"
-    depends_on:
-      - api-gateway
     networks:
       - cloud-health-network
 
