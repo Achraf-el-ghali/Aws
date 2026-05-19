@@ -104,6 +104,8 @@ export class AuthService {
     this.mfaPending = false;
     this.pendingUser = null;
     localStorage.removeItem('cloudhealth_user');
-    this.router.navigate(['/login']);
+    if (!this.router.url.includes('/login')) {
+      this.router.navigate(['/login']);
+    }
   }
 }

@@ -300,8 +300,9 @@ export class LoginComponent {
     private notificationService: NotificationService,
     private router: Router
   ) {
+    // Force logout when arriving on login page
     if (this.authService.isLoggedIn) {
-      this.redirectByRole();
+      this.authService.logout();
     }
   }
 
