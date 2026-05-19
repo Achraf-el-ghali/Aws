@@ -10,12 +10,12 @@ import { ToastComponent } from './components/toast/toast.component';
   imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, ToastComponent],
   template: `
     <!-- No layout for login page -->
-    <div *ngIf="!authService.isLoggedIn">
-      <router-outlet></router-outlet>
+    <div *ngIf="!authService.isLoggedIn || isLoginRoute">
+      <router-outlet *ngIf="!authService.isLoggedIn || isLoginRoute"></router-outlet>
     </div>
 
     <!-- Admin Layout -->
-    <div class="app-layout" *ngIf="authService.isLoggedIn && authService.userRole === 'admin'">
+    <div class="app-layout" *ngIf="authService.isLoggedIn && authService.userRole === 'admin' && !isLoginRoute">
       <aside class="sidebar">
         <div class="sidebar-header">
           <div class="logo"><i class="fas fa-heartbeat"></i><span>Cloud Health</span></div>
@@ -60,7 +60,7 @@ import { ToastComponent } from './components/toast/toast.component';
     </div>
 
     <!-- Patient Layout - Premium Horizontal Navbar -->
-    <div class="patient-layout" *ngIf="authService.isLoggedIn && authService.userRole === 'patient'">
+    <div class="patient-layout" *ngIf="authService.isLoggedIn && authService.userRole === 'patient' && !isLoginRoute">
       <nav class="patient-navbar">
         <div class="navbar-left">
           <a routerLink="/patient/dashboard" routerLinkActive="nav-active" class="nav-link">
@@ -171,6 +171,11 @@ import { ToastComponent } from './components/toast/toast.component';
 })
 export class AppComponent {
   showDropdown = false;
-  constructor(public authService: AuthService, private router: Router) {}
+  isLoginRoute = false;
+  constructor(public authService: AuthService, private router: Router) {
+    this.router.events.subscribe(() => {
+      this.isLoginRoute = this.router.url === '/login' || this.router.url === '/';
+    });
+  }
   logout(): void { this.authService.logout(); }
 }
