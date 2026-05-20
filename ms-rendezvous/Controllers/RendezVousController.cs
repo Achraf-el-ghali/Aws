@@ -70,14 +70,19 @@ public class RendezVousController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<ApiResponse<RendezVous>>> Create([FromBody] CreateRendezVousDto dto)
     {
+        try
+        {
+        var heureDebut = TimeSpan.TryParse(dto.HeureDebut, out var hd) ? hd : TimeSpan.Parse(dto.HeureDebut + ":00");
+        var heureFin = TimeSpan.TryParse(dto.HeureFin, out var hf) ? hf : TimeSpan.Parse(dto.HeureFin + ":00");
+
         var rdv = new RendezVous
         {
             PatientId = dto.PatientId,
             PatientNom = dto.PatientNom,
             MedecinNom = dto.MedecinNom,
-            DateRendezVous = dto.DateRendezVous,
-            HeureDebut = TimeSpan.Parse(dto.HeureDebut),
-            HeureFin = TimeSpan.Parse(dto.HeureFin),
+            DateRendezVous = dto.DateRendezVous.ToUniversalTime(),
+            HeureDebut = heureDebut,
+            HeureFin = heureFin,
             Motif = dto.Motif,
             Notes = dto.Notes,
             Lieu = dto.Lieu,
@@ -98,6 +103,15 @@ public class RendezVousController : ControllerBase
             Message = "Rendez-vous créé avec succès",
             Data = rdv
         });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiResponse<RendezVous>
+            {
+                Success = false,
+                Message = $"Erreur: {ex.Message}"
+            });
+        }
     }
 
     [HttpPut("{id}")]
