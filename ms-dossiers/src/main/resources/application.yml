@@ -4,6 +4,8 @@ server:
 spring:
   application:
     name: ms-dossiers
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:default}
   data:
     mongodb:
       uri: ${SPRING_DATA_MONGODB_URI:mongodb://dossiers_user:dossiers_password@localhost:27017/cloud_health_dossiers?authSource=admin}

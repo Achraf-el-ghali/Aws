@@ -1,0 +1,214 @@
+# ============================================================
+#  Cloud Health — docker-compose PRODUCTION (AWS EC2)
+# ============================================================
+#  Différences clés vs docker-compose.yml local :
+#   - Pas de service frontend (servi par S3 + CloudFront)
+#   - API Gateway exposé sur port 8080 (origin CloudFront)
+#   - Bases & Kafka NON exposés (sécurité — accès uniquement interne)
+#   - restart: unless-stopped sur tous les services
+#   - Variables d'environnement chargées depuis .env (à créer)
+#   - Healthchecks plus tolérants (start_period adapté à EC2)
+# ============================================================
+
+services:
+  # ============================================
+  # DATABASES (réseau interne uniquement)
+  # ============================================
+  db-patients:
+    image: mysql:8.0
+    container_name: cloudhealth-db-patients
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - db-patients-data:/var/lib/mysql
+    networks:
+      - cloud-health-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  db-rendezvous:
+    image: postgres:15
+    container_name: cloudhealth-db-rendezvous
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - db-rendezvous-data:/var/lib/postgresql/data
+      - ./ms-rendezvous/init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - cloud-health-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  db-dossiers:
+    image: mongo:7
+    container_name: cloudhealth-db-dossiers
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_DB}
+    volumes:
+      - db-dossiers-data:/data/db
+    networks:
+      - cloud-health-network
+    healthcheck:
+      test: ["CMD", "mongosh", "-u", "${MONGO_USER}", "-p", "${MONGO_PASSWORD}",
+             "--authenticationDatabase", "admin", "--quiet",
+             "--eval", "db.adminCommand({ping:1}).ok"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 45s
+
+  # ============================================
+  # KAFKA + ZOOKEEPER (réseau interne uniquement)
+  # ============================================
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: cloudhealth-zookeeper
+    restart: unless-stopped
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - cloud-health-network
+    healthcheck:
+      test: ["CMD-SHELL", "echo srvr | nc -w 2 localhost 2181 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: cloudhealth-kafka
+    restart: unless-stopped
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_INTERNAL://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_LOG_RETENTION_HOURS: 24
+    networks:
+      - cloud-health-network
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:29092 || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ============================================
+  # MICROSERVICES
+  # ============================================
+  ms-patients:
+    build:
+      context: ./ms-patients
+      dockerfile: Dockerfile
+    image: cloudhealth/ms-patients:prod
+    container_name: cloudhealth-ms-patients
+    restart: unless-stopped
+    depends_on:
+      db-patients:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    environment:
+      APP_ENV: prod
+      APP_DEBUG: "0"
+      APP_SECRET: ${SYMFONY_APP_SECRET}
+      DATABASE_URL: "mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db-patients:3306/${MYSQL_DATABASE}?serverVersion=8.0"
+      KAFKA_BROKERS: kafka:29092
+      CORS_ALLOW_ORIGIN: "*"
+    networks:
+      - cloud-health-network
+
+  ms-rendezvous:
+    build:
+      context: ./ms-rendezvous
+      dockerfile: Dockerfile
+    image: cloudhealth/ms-rendezvous:prod
+    container_name: cloudhealth-ms-rendezvous
+    restart: unless-stopped
+    depends_on:
+      db-rendezvous:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: "http://+:80"
+      ConnectionStrings__DefaultConnection: "Host=db-rendezvous;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      Kafka__BootstrapServers: kafka:29092
+    networks:
+      - cloud-health-network
+
+  ms-dossiers:
+    build:
+      context: ./ms-dossiers
+      dockerfile: Dockerfile
+    image: cloudhealth/ms-dossiers:prod
+    container_name: cloudhealth-ms-dossiers
+    restart: unless-stopped
+    depends_on:
+      db-dossiers:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATA_MONGODB_URI: "mongodb://${MONGO_USER}:${MONGO_PASSWORD}@db-dossiers:27017/${MONGO_DB}?authSource=admin"
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      JAVA_OPTS: "-Xms256m -Xmx768m"
+    networks:
+      - cloud-health-network
+
+  # ============================================
+  # API GATEWAY (seul port exposé : 8080)
+  # ============================================
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    image: cloudhealth/api-gateway:prod
+    container_name: cloudhealth-api-gateway
+    restart: unless-stopped
+    ports:
+      - "8080:80"   # ⚠️ unique port exposé sur l'EC2
+    depends_on:
+      - ms-patients
+      - ms-rendezvous
+      - ms-dossiers
+    networks:
+      - cloud-health-network
+
+volumes:
+  db-patients-data:
+  db-rendezvous-data:
+  db-dossiers-data:
+
+networks:
+  cloud-health-network:
+    driver: bridge
+    name: cloudhealth-net

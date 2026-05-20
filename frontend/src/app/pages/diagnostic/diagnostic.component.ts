@@ -137,7 +137,7 @@ interface ServiceStatus {
 })
 export class DiagnosticComponent implements OnInit, OnDestroy {
   services: ServiceStatus[] = [
-    { name: 'API Gateway', url: 'http://localhost/health', tech: 'Nginx (Port 80)', status: 'checking', icon: 'fas fa-network-wired' },
+    { name: 'API Gateway', url: '/api/patients/stats', tech: 'Nginx (Port 80)', status: 'checking', icon: 'fas fa-network-wired' },
     { name: 'MS_Patients', url: `${environment.patientsApiUrl}/patients/stats`, tech: 'Symfony / PHP 8.2 / MySQL', status: 'checking', icon: 'fas fa-users' },
     { name: 'MS_RendezVous', url: `${environment.rendezvousApiUrl}/rendezvous/stats`, tech: '.NET Core 8 / PostgreSQL', status: 'checking', icon: 'fas fa-calendar-alt' },
     { name: 'MS_Dossiers', url: `${environment.dossiersApiUrl}/dossiers/stats`, tech: 'Spring Boot 3 / MongoDB', status: 'checking', icon: 'fas fa-folder-open' },

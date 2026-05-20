@@ -1,0 +1,60 @@
+{
+  "family": "cloudhealth-kafka-task",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "1024",
+  "memory": "2048",
+  "executionRoleArn": "arn:aws:iam::<ACCOUNT_ID>:role/ecsTaskExecutionRole",
+  "containerDefinitions": [
+    {
+      "name": "zookeeper",
+      "image": "<ACCOUNT_ID>.dkr.ecr.eu-west-3.amazonaws.com/cloudhealth-zookeeper:latest",
+      "essential": true,
+      "portMappings": [
+        { "containerPort": 2181, "protocol": "tcp" }
+      ],
+      "environment": [
+        { "name": "ZOOKEEPER_CLIENT_PORT", "value": "2181" },
+        { "name": "ZOOKEEPER_TICK_TIME",   "value": "2000" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/cloudhealth-kafka",
+          "awslogs-region": "eu-west-3",
+          "awslogs-stream-prefix": "zookeeper",
+          "awslogs-create-group": "true"
+        }
+      }
+    },
+    {
+      "name": "kafka",
+      "image": "<ACCOUNT_ID>.dkr.ecr.eu-west-3.amazonaws.com/cloudhealth-kafka:latest",
+      "essential": true,
+      "dependsOn": [
+        { "containerName": "zookeeper", "condition": "START" }
+      ],
+      "portMappings": [
+        { "containerPort": 9092,  "protocol": "tcp" },
+        { "containerPort": 29092, "protocol": "tcp" }
+      ],
+      "environment": [
+        { "name": "KAFKA_BROKER_ID",                          "value": "1" },
+        { "name": "KAFKA_ZOOKEEPER_CONNECT",                  "value": "localhost:2181" },
+        { "name": "KAFKA_LISTENER_SECURITY_PROTOCOL_MAP",     "value": "PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT" },
+        { "name": "KAFKA_INTER_BROKER_LISTENER_NAME",         "value": "PLAINTEXT" },
+        { "name": "KAFKA_ADVERTISED_LISTENERS",               "value": "PLAINTEXT://kafka.cloud-health.local:29092,PLAINTEXT_HOST://kafka.cloud-health.local:9092" },
+        { "name": "KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR",   "value": "1" },
+        { "name": "KAFKA_AUTO_CREATE_TOPICS_ENABLE",          "value": "true" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/cloudhealth-kafka",
+          "awslogs-region": "eu-west-3",
+          "awslogs-stream-prefix": "kafka"
+        }
+      }
+    }
+  ]
+}

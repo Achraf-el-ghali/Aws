@@ -33,6 +33,7 @@ services:
       - "5432:5432"
     volumes:
       - db-rendezvous-data:/var/lib/postgresql/data
+      - ./ms-rendezvous/init-db.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - cloud-health-network
     healthcheck:
@@ -55,10 +56,11 @@ services:
     networks:
       - cloud-health-network
     healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh --quiet
+      test: ["CMD", "mongosh", "-u", "dossiers_user", "-p", "dossiers_password", "--authenticationDatabase", "admin", "--eval", "db.runCommand({ping:1}).ok"]
       interval: 10s
-      timeout: 5s
-      retries: 5
+      timeout: 10s
+      retries: 10
+      start_period: 30s
 
   # ============================================
   # KAFKA (Event Broker)
@@ -157,6 +159,10 @@ services:
     container_name: frontend
     ports:
       - "4200:80"
+    environment:
+      API_GATEWAY_HOST: api-gateway:80
+    depends_on:
+      - api-gateway
     networks:
       - cloud-health-network
 

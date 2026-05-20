@@ -2,16 +2,19 @@
   "/api/patients": {
     "target": "http://localhost:8001",
     "secure": false,
-    "changeOrigin": true
+    "changeOrigin": true,
+    "logLevel": "debug"
   },
   "/api/rendezvous": {
     "target": "http://localhost:8002",
     "secure": false,
-    "changeOrigin": true
+    "changeOrigin": true,
+    "logLevel": "debug"
   },
   "/api/dossiers": {
     "target": "http://localhost:8003",
     "secure": false,
-    "changeOrigin": true
+    "changeOrigin": true,
+    "logLevel": "debug"
   }
 }

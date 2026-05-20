@@ -1,0 +1,42 @@
+{
+  "family": "cloudhealth-ms-patients-task",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::<ACCOUNT_ID>:role/ecsTaskExecutionRole",
+  "containerDefinitions": [
+    {
+      "name": "ms-patients",
+      "image": "<ACCOUNT_ID>.dkr.ecr.eu-west-3.amazonaws.com/cloudhealth-ms-patients:latest",
+      "essential": true,
+      "portMappings": [
+        { "containerPort": 80, "protocol": "tcp" }
+      ],
+      "environment": [
+        { "name": "APP_ENV",            "value": "prod" },
+        { "name": "APP_DEBUG",          "value": "0" },
+        { "name": "APP_SECRET",         "value": "CHANGE_ME_32_CHARS_RANDOM_STRING_FOR_SYMFONY_SECRET" },
+        { "name": "DATABASE_URL",       "value": "mysql://patients_user:Patients_Pass_2026@<RDS_MYSQL_ENDPOINT>:3306/cloud_health_patients?serverVersion=8.0" },
+        { "name": "KAFKA_BROKERS",      "value": "kafka.cloud-health.local:29092" },
+        { "name": "CORS_ALLOW_ORIGIN",  "value": "*" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/cloudhealth-ms-patients",
+          "awslogs-region": "eu-west-3",
+          "awslogs-stream-prefix": "ms-patients",
+          "awslogs-create-group": "true"
+        }
+      },
+      "healthCheck": {
+        "command": ["CMD-SHELL", "curl -f http://localhost:80/health || exit 1"],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 60
+      }
+    }
+  ]
+}

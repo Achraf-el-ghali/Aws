@@ -1,0 +1,40 @@
+# ============================================================
+#  Cloud Health — systemd service unit
+# ============================================================
+#  Permet de démarrer/arrêter automatiquement la stack au boot
+#  de l'EC2 et avec systemctl.
+#
+#  Installation (sur l'EC2) :
+#    sudo cp cloudhealth.service /etc/systemd/system/
+#    sudo systemctl daemon-reload
+#    sudo systemctl enable cloudhealth
+#    sudo systemctl start cloudhealth
+#
+#  Commandes utiles :
+#    sudo systemctl status cloudhealth
+#    sudo systemctl restart cloudhealth
+#    sudo systemctl stop cloudhealth
+#    journalctl -u cloudhealth -f
+# ============================================================
+
+[Unit]
+Description=Cloud Health Backend (Docker Compose)
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+User=ubuntu
+Group=docker
+WorkingDirectory=/home/ubuntu/cloudhealth
+ExecStartPre=/usr/bin/docker compose -f docker-compose.prod.yml pull --ignore-pull-failures
+ExecStart=/usr/bin/docker compose -f docker-compose.prod.yml up -d --remove-orphans
+ExecStop=/usr/bin/docker compose -f docker-compose.prod.yml down
+TimeoutStartSec=600
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

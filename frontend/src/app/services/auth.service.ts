@@ -18,18 +18,42 @@ export class AuthService {
   private mfaPending = false;
   private pendingUser: User | null = null;
 
-  // Simulated users database
+  // Simulated users database — IDs start at 9000+ to avoid conflict with real patient IDs in DB
   private users: Array<User & { password: string; mfaCode: string }> = [
-    { id: 1, email: 'admin@cloudhealth.com', password: 'admin123', nom: 'Martin', prenom: 'Dr. Pierre', role: 'admin', mfaCode: '123456' },
-    { id: 2, email: 'patient@cloudhealth.com', password: 'patient123', nom: 'Dupont', prenom: 'Jean', role: 'patient', mfaCode: '654321' },
+    { id: 9001, email: 'admin@cloudhealth.com', password: 'admin123', nom: 'Martin', prenom: 'Dr. Pierre', role: 'admin', mfaCode: '123456' },
+    { id: 9002, email: 'patient@cloudhealth.com', password: 'patient123', nom: 'Dupont', prenom: 'Jean', role: 'patient', mfaCode: '654321' },
   ];
 
-  private nextId = 3;
+  private nextId = 9003;
 
   constructor(private router: Router) {
-    const stored = localStorage.getItem('cloudhealth_user');
-    if (stored) {
-      this.currentUserSubject.next(JSON.parse(stored));
+    this.restoreSession();
+  }
+
+  /**
+   * Restore session from localStorage with validation
+   */
+  private restoreSession(): void {
+    try {
+      const stored = localStorage.getItem('cloudhealth_user');
+      if (stored) {
+        const user: User = JSON.parse(stored);
+        // Validate the stored user has required fields
+        if (user && user.id && user.email && user.role && user.token) {
+          // Verify the user still exists in our simulated DB
+          const exists = this.users.find(u => u.email === user.email && u.id === user.id);
+          if (exists) {
+            this.currentUserSubject.next(user);
+          } else {
+            // User no longer valid — clear stale session
+            localStorage.removeItem('cloudhealth_user');
+          }
+        } else {
+          localStorage.removeItem('cloudhealth_user');
+        }
+      }
+    } catch {
+      localStorage.removeItem('cloudhealth_user');
     }
   }
 

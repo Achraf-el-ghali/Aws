@@ -1,0 +1,40 @@
+{
+  "family": "cloudhealth-ms-rendezvous-task",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::<ACCOUNT_ID>:role/ecsTaskExecutionRole",
+  "containerDefinitions": [
+    {
+      "name": "ms-rendezvous",
+      "image": "<ACCOUNT_ID>.dkr.ecr.eu-west-3.amazonaws.com/cloudhealth-ms-rendezvous:latest",
+      "essential": true,
+      "portMappings": [
+        { "containerPort": 80, "protocol": "tcp" }
+      ],
+      "environment": [
+        { "name": "ASPNETCORE_ENVIRONMENT",                "value": "Production" },
+        { "name": "ASPNETCORE_URLS",                       "value": "http://+:80" },
+        { "name": "ConnectionStrings__DefaultConnection",  "value": "Host=<RDS_POSTGRES_ENDPOINT>;Port=5432;Database=cloud_health_rendezvous;Username=rendezvous_user;Password=Rendezvous_Pass_2026" },
+        { "name": "Kafka__BootstrapServers",               "value": "kafka.cloud-health.local:29092" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/cloudhealth-ms-rendezvous",
+          "awslogs-region": "eu-west-3",
+          "awslogs-stream-prefix": "ms-rendezvous",
+          "awslogs-create-group": "true"
+        }
+      },
+      "healthCheck": {
+        "command": ["CMD-SHELL", "curl -f http://localhost:80/health || exit 1"],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 60
+      }
+    }
+  ]
+}

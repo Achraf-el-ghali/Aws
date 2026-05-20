@@ -1,0 +1,39 @@
+{
+  "family": "cloudhealth-ms-dossiers-task",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "1024",
+  "memory": "2048",
+  "executionRoleArn": "arn:aws:iam::<ACCOUNT_ID>:role/ecsTaskExecutionRole",
+  "containerDefinitions": [
+    {
+      "name": "ms-dossiers",
+      "image": "<ACCOUNT_ID>.dkr.ecr.eu-west-3.amazonaws.com/cloudhealth-ms-dossiers:latest",
+      "essential": true,
+      "portMappings": [
+        { "containerPort": 8080, "protocol": "tcp" }
+      ],
+      "environment": [
+        { "name": "SPRING_PROFILES_ACTIVE",      "value": "prod" },
+        { "name": "SPRING_DATA_MONGODB_URI",     "value": "mongodb://dossiers_user:Dossiers_Pass_2026@<DOCDB_CLUSTER_ENDPOINT>:27017/cloud_health_dossiers?tls=true&tlsCAFile=/app/global-bundle.pem&replicaSet=rs0&readPreference=secondaryPreferred&retryWrites=false" },
+        { "name": "SPRING_KAFKA_BOOTSTRAP_SERVERS", "value": "kafka.cloud-health.local:29092" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/cloudhealth-ms-dossiers",
+          "awslogs-region": "eu-west-3",
+          "awslogs-stream-prefix": "ms-dossiers",
+          "awslogs-create-group": "true"
+        }
+      },
+      "healthCheck": {
+        "command": ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 90
+      }
+    }
+  ]
+}

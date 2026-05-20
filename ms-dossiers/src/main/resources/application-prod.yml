@@ -1,0 +1,42 @@
+# ============================================================
+#  ms-dossiers — Profil PRODUCTION (EC2 + MongoDB containerisé)
+# ============================================================
+#  Activé via : SPRING_PROFILES_ACTIVE=prod
+#  Toutes les valeurs sensibles sont surchargées par Docker Compose
+#  via les variables d'environnement.
+# ============================================================
+
+server:
+  port: 8080
+
+spring:
+  data:
+    mongodb:
+      uri: ${SPRING_DATA_MONGODB_URI}
+      auto-index-creation: true
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      group-id: ms-dossiers-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+logging:
+  level:
+    root: INFO
+    org.springframework.data.mongodb: WARN
+    org.mongodb.driver: WARN
+    org.apache.kafka: WARN
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never

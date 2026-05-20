@@ -43,4 +43,10 @@ RUN composer install --no-interaction --optimize-autoloader --no-dev || true
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html/var || true
 
+# Copy entrypoint script
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh && chmod +x /usr/local/bin/docker-entrypoint.sh
+
 EXPOSE 80
+
+ENTRYPOINT ["docker-entrypoint.sh"]
