@@ -42,10 +42,30 @@ app.UseAuthorization();
 app.MapControllers();
 
 // Auto-migrate database
-using (var scope = app.Services.CreateScope())
+try
 {
-    var db = scope.ServiceProvider.GetRequiredService<RendezVousDbContext>();
-    db.Database.Migrate();
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<RendezVousDbContext>();
+        db.Database.Migrate();
+    }
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Database migration warning: {ex.Message}. App will continue...");
+    // Try EnsureCreated as fallback
+    try
+    {
+        using (var scope = app.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<RendezVousDbContext>();
+            db.Database.EnsureCreated();
+        }
+    }
+    catch (Exception ex2)
+    {
+        Console.WriteLine($"Database EnsureCreated also failed: {ex2.Message}");
+    }
 }
 
 app.Run();
