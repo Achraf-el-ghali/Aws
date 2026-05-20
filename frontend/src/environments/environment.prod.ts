@@ -1,16 +1,14 @@
 // ============================================================
-// PRODUCTION environment — Deployed to S3 + CloudFront
+//  PRODUCTION environment — Frontend déployé sur S3 + CloudFront
+//  Backend : EC2 derrière l'API Gateway sur le port 8080
 // ============================================================
-// CloudFront has 2 origins:
-//   1. S3 bucket (default behavior) → serves Angular static files
-//   2. ALB (path /api/*) → forwards to ECS Fargate microservices
-//
-// All API URLs use relative paths so the same CloudFront distribution
-// handles both static content and API requests.
+//  La valeur `apiBaseUrl` peut être surchargée à l'exécution via
+//  /assets/config/runtime-config.json (cf. AppConfigService).
+//  Cela permet de pousser le même bundle sur plusieurs environnements
+//  (dev / staging / prod) sans rebuilder Angular.
+// ============================================================
+
 export const environment = {
   production: true,
-  apiUrl: '/api',
-  patientsApiUrl: '/api',
-  rendezvousApiUrl: '/api',
-  dossiersApiUrl: '/api',
+  apiBaseUrl: '/api',
 };

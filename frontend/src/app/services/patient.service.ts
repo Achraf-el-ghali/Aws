@@ -2,18 +2,21 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Patient, ApiResponse } from '../models/patient.model';
-import { environment } from '@environments/environment';
+import { AppConfigService } from '../core/config/app-config.service';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Injectable({ providedIn: 'root' })
 export class PatientService {
-  private apiUrl = `${environment.patientsApiUrl}/patients`;
+  constructor(
+    private http: HttpClient,
+    private config: AppConfigService,
+  ) {}
 
-  constructor(private http: HttpClient) {}
+  private get apiUrl(): string {
+    return `${this.config.apiBaseUrl}/patients`;
+  }
 
   getAll(search?: string): Observable<ApiResponse<Patient[]>> {
-    const params = search ? `?search=${search}` : '';
+    const params = search ? `?search=${encodeURIComponent(search)}` : '';
     return this.http.get<ApiResponse<Patient[]>>(`${this.apiUrl}${params}`);
   }
 

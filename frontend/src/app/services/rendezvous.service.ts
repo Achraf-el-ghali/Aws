@@ -2,22 +2,24 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { RendezVous, ApiResponse } from '../models/patient.model';
-import { environment } from '@environments/environment';
+import { AppConfigService } from '../core/config/app-config.service';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Injectable({ providedIn: 'root' })
 export class RendezvousService {
-  private apiUrl = `${environment.rendezvousApiUrl}/rendezvous`;
+  constructor(
+    private http: HttpClient,
+    private config: AppConfigService,
+  ) {}
 
-  constructor(private http: HttpClient) {}
+  private get apiUrl(): string {
+    return `${this.config.apiBaseUrl}/rendezvous`;
+  }
 
   getAll(filters?: { patientId?: number; statut?: string; date?: string }): Observable<ApiResponse<RendezVous[]>> {
     let params = new HttpParams();
     if (filters?.patientId) params = params.set('patientId', filters.patientId.toString());
-    if (filters?.statut) params = params.set('statut', filters.statut);
-    if (filters?.date) params = params.set('date', filters.date);
-
+    if (filters?.statut)    params = params.set('statut', filters.statut);
+    if (filters?.date)      params = params.set('date', filters.date);
     return this.http.get<ApiResponse<RendezVous[]>>(this.apiUrl, { params });
   }
 

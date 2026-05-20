@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { NotificationService, LogEntry } from '../../services/notification.service';
-import { environment } from '@environments/environment';
+import { AppConfigService } from '../../core/config/app-config.service';
 import { Subscription } from 'rxjs';
 
 interface ServiceStatus {
@@ -136,21 +136,27 @@ interface ServiceStatus {
   `]
 })
 export class DiagnosticComponent implements OnInit, OnDestroy {
-  services: ServiceStatus[] = [
-    { name: 'API Gateway', url: '/api/patients/stats', tech: 'Nginx (Port 80)', status: 'checking', icon: 'fas fa-network-wired' },
-    { name: 'MS_Patients', url: `${environment.patientsApiUrl}/patients/stats`, tech: 'Symfony / PHP 8.2 / MySQL', status: 'checking', icon: 'fas fa-users' },
-    { name: 'MS_RendezVous', url: `${environment.rendezvousApiUrl}/rendezvous/stats`, tech: '.NET Core 8 / PostgreSQL', status: 'checking', icon: 'fas fa-calendar-alt' },
-    { name: 'MS_Dossiers', url: `${environment.dossiersApiUrl}/dossiers/stats`, tech: 'Spring Boot 3 / MongoDB', status: 'checking', icon: 'fas fa-folder-open' },
-    { name: 'Event Broker (Kafka)', url: `${environment.dossiersApiUrl}/dossiers/stats`, tech: 'Apache Kafka / Confluent', status: 'checking', icon: 'fas fa-broadcast-tower' },
-  ];
+  services: ServiceStatus[] = [];
   logs: LogEntry[] = [];
   isChecking = false;
   flowStep = 0;
   private logsSub?: Subscription;
 
-  constructor(private http: HttpClient, public notificationService: NotificationService) {}
+  constructor(
+    private http: HttpClient,
+    public notificationService: NotificationService,
+    private config: AppConfigService,
+  ) {}
 
   ngOnInit(): void {
+    const api = this.config.apiBaseUrl;
+    this.services = [
+      { name: 'API Gateway',           url: `${api}/patients/stats`,    tech: 'Nginx (Gateway 8080)',          status: 'checking', icon: 'fas fa-network-wired' },
+      { name: 'MS_Patients',           url: `${api}/patients/stats`,    tech: 'Symfony / PHP 8.2 / MySQL',     status: 'checking', icon: 'fas fa-users' },
+      { name: 'MS_RendezVous',         url: `${api}/rendezvous/stats`,  tech: '.NET Core 8 / PostgreSQL',      status: 'checking', icon: 'fas fa-calendar-alt' },
+      { name: 'MS_Dossiers',           url: `${api}/dossiers/stats`,    tech: 'Spring Boot 3 / MongoDB',       status: 'checking', icon: 'fas fa-folder-open' },
+      { name: 'Event Broker (Kafka)',  url: `${api}/dossiers/stats`,    tech: 'Apache Kafka / Confluent',      status: 'checking', icon: 'fas fa-broadcast-tower' },
+    ];
     this.logsSub = this.notificationService.logs$.subscribe(logs => this.logs = logs);
     this.checkAllServices();
   }

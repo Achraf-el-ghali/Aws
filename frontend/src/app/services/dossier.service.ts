@@ -2,18 +2,21 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { DossierMedical, Consultation, Ordonnance, Examen, ApiResponse } from '../models/patient.model';
-import { environment } from '@environments/environment';
+import { AppConfigService } from '../core/config/app-config.service';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Injectable({ providedIn: 'root' })
 export class DossierService {
-  private apiUrl = `${environment.dossiersApiUrl}/dossiers`;
+  constructor(
+    private http: HttpClient,
+    private config: AppConfigService,
+  ) {}
 
-  constructor(private http: HttpClient) {}
+  private get apiUrl(): string {
+    return `${this.config.apiBaseUrl}/dossiers`;
+  }
 
   getAll(search?: string): Observable<ApiResponse<DossierMedical[]>> {
-    const params = search ? `?search=${search}` : '';
+    const params = search ? `?search=${encodeURIComponent(search)}` : '';
     return this.http.get<ApiResponse<DossierMedical[]>>(`${this.apiUrl}${params}`);
   }
 

@@ -35,3 +35,7 @@ docker-compose.override.yml
 *.tfstate
 *.tfstate.backup
 *.tfvars
+
+# Runtime config (URLs des environnements — non versionnées)
+frontend/src/assets/config/runtime-config.json
+frontend/src/assets/config/runtime-config.*.json
