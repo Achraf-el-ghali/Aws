@@ -72,37 +72,52 @@ public class RendezVousController : ControllerBase
     {
         try
         {
-        var heureDebut = TimeSpan.TryParse(dto.HeureDebut, out var hd) ? hd : TimeSpan.Parse(dto.HeureDebut + ":00");
-        var heureFin = TimeSpan.TryParse(dto.HeureFin, out var hf) ? hf : TimeSpan.Parse(dto.HeureFin + ":00");
+            var heureDebut = TimeSpan.TryParse(dto.HeureDebut, out var hd) ? hd : TimeSpan.Parse(dto.HeureDebut + ":00");
+            var heureFin   = TimeSpan.TryParse(dto.HeureFin,   out var hf) ? hf : TimeSpan.Parse(dto.HeureFin   + ":00");
 
-        var rdv = new RendezVous
-        {
-            PatientId = dto.PatientId,
-            PatientNom = dto.PatientNom,
-            MedecinNom = dto.MedecinNom,
-            DateRendezVous = dto.DateRendezVous.ToUniversalTime(),
-            HeureDebut = heureDebut,
-            HeureFin = heureFin,
-            Motif = dto.Motif,
-            Notes = dto.Notes,
-            Lieu = dto.Lieu,
-            TypeConsultation = dto.TypeConsultation,
-            Statut = "planifie",
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
+            var rdv = new RendezVous
+            {
+                PatientId        = dto.PatientId,
+                PatientNom       = dto.PatientNom,
+                MedecinNom       = dto.MedecinNom,
+                DateRendezVous   = dto.DateRendezVous.ToUniversalTime(),
+                HeureDebut       = heureDebut,
+                HeureFin         = heureFin,
+                Motif            = dto.Motif,
+                Notes            = dto.Notes,
+                Lieu             = dto.Lieu,
+                TypeConsultation = dto.TypeConsultation,
+                Statut           = "planifie",
+                CreatedAt        = DateTime.UtcNow,
+                UpdatedAt        = DateTime.UtcNow
+            };
 
-        _context.RendezVous.Add(rdv);
-        await _context.SaveChangesAsync();
+            _context.RendezVous.Add(rdv);
+            await _context.SaveChangesAsync();
 
-        await _kafkaProducer.ProduceAsync("rendezvous.events", "rendezvous.created", rdv);
+            // ⚡ Kafka en fire-and-forget : on ne bloque JAMAIS la réponse HTTP.
+            //   - Si Kafka est joignable → message envoyé en arrière-plan
+            //   - Si Kafka est down → log warning, le client reçoit quand même son 201
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+                    await _kafkaProducer.ProduceAsync("rendezvous.events", "rendezvous.created", rdv)
+                                        .WaitAsync(cts.Token);
+                }
+                catch (Exception kex)
+                {
+                    Console.Error.WriteLine($"[Kafka] rendezvous.created publish failed (non-blocking): {kex.Message}");
+                }
+            });
 
-        return CreatedAtAction(nameof(GetById), new { id = rdv.Id }, new ApiResponse<RendezVous>
-        {
-            Success = true,
-            Message = "Rendez-vous créé avec succès",
-            Data = rdv
-        });
+            return CreatedAtAction(nameof(GetById), new { id = rdv.Id }, new ApiResponse<RendezVous>
+            {
+                Success = true,
+                Message = "Rendez-vous créé avec succès",
+                Data = rdv
+            });
         }
         catch (Exception ex)
         {
@@ -139,7 +154,20 @@ public class RendezVousController : ControllerBase
 
         await _context.SaveChangesAsync();
 
-        await _kafkaProducer.ProduceAsync("rendezvous.events", "rendezvous.updated", rdv);
+        // Kafka fire-and-forget (non bloquant)
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+                await _kafkaProducer.ProduceAsync("rendezvous.events", "rendezvous.updated", rdv)
+                                    .WaitAsync(cts.Token);
+            }
+            catch (Exception kex)
+            {
+                Console.Error.WriteLine($"[Kafka] rendezvous.updated publish failed (non-blocking): {kex.Message}");
+            }
+        });
 
         return Ok(new ApiResponse<RendezVous>
         {
@@ -164,7 +192,20 @@ public class RendezVousController : ControllerBase
         _context.RendezVous.Remove(rdv);
         await _context.SaveChangesAsync();
 
-        await _kafkaProducer.ProduceAsync("rendezvous.events", "rendezvous.cancelled", rdv);
+        // Kafka fire-and-forget (non bloquant)
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+                await _kafkaProducer.ProduceAsync("rendezvous.events", "rendezvous.cancelled", rdv)
+                                    .WaitAsync(cts.Token);
+            }
+            catch (Exception kex)
+            {
+                Console.Error.WriteLine($"[Kafka] rendezvous.cancelled publish failed (non-blocking): {kex.Message}");
+            }
+        });
 
         return Ok(new ApiResponse<object>
         {

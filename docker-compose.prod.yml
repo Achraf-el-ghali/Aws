@@ -151,6 +151,7 @@ services:
     image: cloudhealth/ms-rendezvous:prod
     container_name: cloudhealth-ms-rendezvous
     restart: unless-stopped
+    # ⚠️ AUCUN `ports:` — accès uniquement via api-gateway (réseau Docker interne)
     depends_on:
       db-rendezvous:
         condition: service_healthy
