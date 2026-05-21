@@ -1,8 +1,13 @@
 import { ApplicationConfig, APP_INITIALIZER } from '@angular/core';
 import { provideRouter } from '@angular/router';
-import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import {
+  provideHttpClient,
+  withInterceptors,
+  withInterceptorsFromDi,
+} from '@angular/common/http';
 import { routes } from './app.routes';
 import { AppConfigService } from './core/config/app-config.service';
+import { responseNormalizerInterceptor } from './core/interceptors/response-normalizer.interceptor';
 
 /**
  * Charge /assets/config/runtime-config.json AVANT le démarrage de l'app.
@@ -15,7 +20,16 @@ function initApp(config: AppConfigService) {
 export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes),
-    provideHttpClient(withInterceptorsFromDi()),
+
+    // HTTP client + intercepteurs
+    provideHttpClient(
+      // 1) Intercepteurs fonctionnels (Angular 15+, nouvelle API)
+      withInterceptors([responseNormalizerInterceptor]),
+      // 2) Intercepteurs classes via DI (rétro-compatibilité)
+      withInterceptorsFromDi(),
+    ),
+
+    // Bootstrap config runtime
     {
       provide: APP_INITIALIZER,
       useFactory: initApp,
